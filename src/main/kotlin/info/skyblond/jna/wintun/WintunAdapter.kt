@@ -147,6 +147,15 @@ class WintunAdapter(
     }
 
     /**
+     * Add an [ip] to this adapter.
+     *
+     * @return true if created, false means address already exists.
+     * */
+    fun associateIp(ip: InetAddress, prefixLength: Int): Boolean {
+        return associateIp(AdapterIPAddress(ip = ip, prefixLength = prefixLength.toUByte()))
+    }
+
+    /**
      * Add an [AdapterIPAddress] to this adapter.
      *
      * @return true if created, false means address already exists.
@@ -204,7 +213,7 @@ class WintunAdapter(
      *
      * @param ipFamily Must be [IPHlpAPI.AF_INET] or [IPHlpAPI.AF_INET6]
      * */
-    fun getMTU(ipFamily: Int): UInt {
+    fun getMTU(ipFamily: Int): Int {
         val ipInterfaceRow = MibIPInterfaceRow()
         ipHelperLib.InitializeIpInterfaceEntry(ipInterfaceRow)
         ipInterfaceRow.InterfaceLuid = getLuid()
@@ -213,7 +222,7 @@ class WintunAdapter(
             if (err != WinError.NO_ERROR)
                 throw NativeException("Failed getting MIB_IPINTERFACE_ROW", err)
         }
-        return ipInterfaceRow.NlMtu.toUInt()
+        return ipInterfaceRow.NlMtu
     }
 
     /**
@@ -222,7 +231,7 @@ class WintunAdapter(
      * @param ipFamily Must be [IPHlpAPI.AF_INET] or [IPHlpAPI.AF_INET6]
      * @param mtu The new mtu value. Although it's [UInt], the range is [UShort].
      * */
-    fun setMTU(ipFamily: Int, mtu: UInt) {
+    fun setMTU(ipFamily: Int, mtu: Int) {
         val ipInterfaceRow = MibIPInterfaceRow()
         ipHelperLib.InitializeIpInterfaceEntry(ipInterfaceRow)
         ipInterfaceRow.Family = ipFamily
@@ -231,7 +240,8 @@ class WintunAdapter(
             if (err != WinError.NO_ERROR)
                 throw NativeException("Failed getting MIB_IPINTERFACE_ROW", err)
         }
-        ipInterfaceRow.NlMtu = mtu.toInt()
+        ipInterfaceRow.NlMtu = mtu
+        ipInterfaceRow.SitePrefixLength = 0
         ipHelperLib.SetIpInterfaceEntry(ipInterfaceRow).let { err ->
             if (err != WinError.NO_ERROR)
                 throw NativeException("Failed setting new MTU", err)

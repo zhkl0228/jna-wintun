@@ -19,6 +19,11 @@ class WintunSession(
 ) : AutoCloseable {
     private val readEvent: HANDLE = lib.WintunGetReadWaitEvent(session)
 
+    @Throws(NativeException::class, EOFException::class)
+    fun readPacket(): ByteArray? {
+        return readPacket(awaitTimeMs = WinBase.INFINITE.toUInt())
+    }
+
     /**
      * Read an IP packet from session.
      *
