@@ -87,6 +87,7 @@ class WintunAdapter(
                     else -> error("Unknown si family: ${it.NextHop.si_family}")
                 }
                 ForwardTable(
+                    interfaceIndex = it.InterfaceIndex,
                     destination = destination,
                     prefixLength = it.DestinationPrefix.PrefixLength.toUByte(),
                     nextHop = nextHop,
@@ -125,6 +126,22 @@ class WintunAdapter(
         val result = LongByReference()
         wintunLib.WintunGetAdapterLUID(adapter, result)
         return result.value
+    }
+
+    fun setDefaultAdapter() {
+        val row = MIB_IPFORWARD_ROW2()
+        ipHelperLib.InitializeIpForwardEntry(row)
+        row.InterfaceLuid = getLuid()
+        row.DestinationPrefix.Prefix.setType(Int::class.java)
+        row.DestinationPrefix.Prefix.si_family = IPHlpAPI.AF_INET
+        row.NextHop.setType(Int::class.java)
+        row.NextHop.si_family = IPHlpAPI.AF_INET
+        row.SitePrefixLength = 0
+        row.Metric = 0
+        val err = ipHelperLib.CreateIpForwardEntry2(row)
+        if (err != WinError.NO_ERROR)
+            throw NativeException("Failed to set default router", err)
+        ipHelperLib.FreeMibTable(row.pointer)
     }
 
     /**

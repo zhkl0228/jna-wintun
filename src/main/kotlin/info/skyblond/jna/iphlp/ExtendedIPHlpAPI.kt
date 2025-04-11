@@ -28,6 +28,10 @@ interface ExtendedIPHlpAPI : IPHlpAPI {
      * */
     fun InitializeIpInterfaceEntry(row: MibIPInterfaceRow)
 
+    fun InitializeIpForwardEntry(row: MIB_IPFORWARD_ROW2)
+
+    fun CreateIpForwardEntry2(row: MIB_IPFORWARD_ROW2): Int
+
     /**
      * Retrieves IP information for the specified interface on the local computer.
      *

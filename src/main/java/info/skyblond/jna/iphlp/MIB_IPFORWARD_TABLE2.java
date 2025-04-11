@@ -18,7 +18,7 @@ public class MIB_IPFORWARD_TABLE2 extends Structure {
         // First element contains array size
         this.numEntries = getPointer().getInt(0);
         if (this.numEntries > 0) {
-            table = (MIB_IPFORWARD_ROW2[]) new MIB_IPFORWARD_ROW2().toArray(this.numEntries);
+            table = new MIB_IPFORWARD_ROW2[this.numEntries];
             super.read();
         } else {
             table = new MIB_IPFORWARD_ROW2[0];

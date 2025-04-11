@@ -20,7 +20,7 @@ dependencies {
     testImplementation(kotlin("test"))
     testImplementation("org.pcap4j:pcap4j-core:1.8.2")
     testImplementation("org.pcap4j:pcap4j-packetfactory-static:1.8.2")
-    testImplementation("ch.qos.logback:logback-classic:1.4.5")
+    testImplementation("ch.qos.logback:logback-classic:1.4.12")
 }
 
 tasks.test {

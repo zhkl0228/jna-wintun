@@ -28,10 +28,8 @@ public class WintunVpn implements Runnable {
         String host = args[0];
         int port = Integer.parseInt(args[1]);
         try {
-            WintunVpn vpn = new WintunVpn(new InetSocketAddress(Inet4Address.getByName(host), port));
-            Thread thread = new Thread(vpn, "WintunVpn");
-            thread.setPriority(Thread.MIN_PRIORITY);
-            thread.start();
+            WintunVpn vpn = new WintunVpn(host, port);
+            vpn.start();
 
             Scanner scanner = new Scanner(System.in);
             String line;
@@ -39,7 +37,7 @@ public class WintunVpn implements Runnable {
                 if ("q".equalsIgnoreCase(line) ||
                         "quit".equalsIgnoreCase(line) ||
                         "exit".equalsIgnoreCase(line)) {
-                    vpn.canStop = true;
+                    vpn.stop();
                     break;
                 }
             }
@@ -97,10 +95,24 @@ public class WintunVpn implements Runnable {
 
     private boolean canStop;
 
+    public void start() {
+        if(canStop) {
+            throw new IllegalStateException("Can't start VPN after stop");
+        }
+        Thread thread = new Thread(this);
+        thread.setPriority(Thread.MIN_PRIORITY);
+        thread.start();
+    }
+
+    public void stop() {
+        canStop = true;
+    }
+
     private void startNative(WintunAdapter adapter) throws IOException, NativeException {
         try (Socket socket = new Socket();
              WintunSession session = adapter.newSession(0x800000)) {
             socket.connect(vpnServer, 15000);
+            adapter.setDefaultAdapter();
             try (InputStream inputStream = socket.getInputStream();
                  OutputStream outputStream = socket.getOutputStream()) {
                 DataOutput output = new DataOutputStream(outputStream);
@@ -132,7 +144,11 @@ public class WintunVpn implements Runnable {
 
     private final InetSocketAddress vpnServer;
 
-    private WintunVpn(InetSocketAddress vpnServer) {
+    public WintunVpn(String host, int port) {
+        this(new InetSocketAddress(host, port));
+    }
+
+    public WintunVpn(InetSocketAddress vpnServer) {
         this.vpnServer = vpnServer;
     }
 
