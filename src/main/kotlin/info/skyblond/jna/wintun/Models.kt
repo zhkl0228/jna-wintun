@@ -23,6 +23,13 @@ class NativeException(msg: String, err: Int) : Exception(
     "$msg: err $err, ${Kernel32Util.formatMessageFromLastErrorCode(err)}"
 )
 
+data class ForwardTable(
+    val destination: InetAddress,
+    val prefixLength: UByte,
+    val nextHop: InetAddress,
+    val metric: Int
+)
+
 /**
  * Representing an adapter ip address.
  * */

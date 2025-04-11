@@ -88,6 +88,8 @@ interface ExtendedIPHlpAPI : IPHlpAPI {
      * */
     fun GetUnicastIpAddressTable(family: Int, table: PointerByReference): Int
 
+    fun GetIpForwardTable2(family: Int, table: PointerByReference): Int
+
     /**
      * Frees the buffer allocated by the functions that return tables of network
      * interfaces, addresses, and routes.

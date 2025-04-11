@@ -1,4 +1,4 @@
-package info.skyblond.jna;
+package info.skyblond.vpn;
 
 import com.sun.jna.platform.win32.Guid;
 import com.sun.jna.platform.win32.IPHlpAPI;

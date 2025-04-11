@@ -43,6 +43,61 @@ class WintunAdapter(
     private val wintunLib: WintunLib = WintunLib.INSTANCE
     private val ipHelperLib: ExtendedIPHlpAPI = ExtendedIPHlpAPI.INSTANCE
 
+    companion object {
+
+        fun listIpv4ForwardTable(): List<ForwardTable> {
+            val pointerByReference = PointerByReference()
+            val err = ExtendedIPHlpAPI.INSTANCE.GetIpForwardTable2(IPHlpAPI.AF_INET, pointerByReference)
+            // something wrong
+            if (err != WinError.NO_ERROR && err != WinError.ERROR_NOT_FOUND)
+                throw NativeException("Failed to list ip forward table", err)
+            // no ip, return empty list
+            if (err != WinError.NO_ERROR) return emptyList()
+            val table = MIB_IPFORWARD_TABLE2(pointerByReference.value)
+            check(table.numEntries == table.table.size) {
+                "MIB_IPFORWARD_TABLE2 size not match. Expect ${table.numEntries}, actual: ${table.table.size}"
+            }
+            val result = table.table.map {
+                it.DestinationPrefix.Prefix.setType(Int::class.java)
+                val destination = when (it.DestinationPrefix.Prefix.si_family) {
+                    IPHlpAPI.AF_INET -> {
+                        val v4 = it.DestinationPrefix.Prefix.getTypedValue(SocketAddrIn::class.java) as SocketAddrIn
+                        Inet4Address.getByAddress(v4.sin_addr.copyOf())
+                    }
+
+                    IPHlpAPI.AF_INET6 -> {
+                        val v6 = it.DestinationPrefix.Prefix.getTypedValue(SocketAddrIn6::class.java) as SocketAddrIn6
+                        Inet6Address.getByAddress(v6.sin6_addr.copyOf())
+                    }
+
+                    else -> error("Unknown si family: ${it.DestinationPrefix.Prefix.si_family}")
+                }
+                it.NextHop.setType(Int::class.java)
+                val nextHop = when (it.NextHop.si_family) {
+                    IPHlpAPI.AF_INET -> {
+                        val v4 = it.NextHop.getTypedValue(SocketAddrIn::class.java) as SocketAddrIn
+                        Inet4Address.getByAddress(v4.sin_addr.copyOf())
+                    }
+
+                    IPHlpAPI.AF_INET6 -> {
+                        val v6 = it.NextHop.getTypedValue(SocketAddrIn6::class.java) as SocketAddrIn6
+                        Inet6Address.getByAddress(v6.sin6_addr.copyOf())
+                    }
+
+                    else -> error("Unknown si family: ${it.NextHop.si_family}")
+                }
+                ForwardTable(
+                    destination = destination,
+                    prefixLength = it.DestinationPrefix.PrefixLength.toUByte(),
+                    nextHop = nextHop,
+                    metric = it.Metric
+                )
+            }
+            ExtendedIPHlpAPI.INSTANCE.FreeMibTable(table.pointer)
+            return result
+        }
+    }
+
     /**
      * Open a existing tun device.
      * */
