@@ -1,5 +1,6 @@
 package info.skyblond.vpn;
 
+import com.alibaba.fastjson.JSONObject;
 import com.sun.jna.platform.win32.Guid;
 import com.sun.jna.platform.win32.IPHlpAPI;
 import info.skyblond.jna.wintun.AdapterIPAddress;
@@ -9,58 +10,16 @@ import info.skyblond.jna.wintun.WintunSession;
 
 import java.io.*;
 import java.net.*;
-import java.util.Scanner;
+import java.util.Locale;
 
 /**
  * WintunVpn 192.168.1.28 20240
  */
-public class WintunVpn implements Runnable {
+public class WintunVpn {
 
     private static final String VPN_CLIENT_IP = "10.1.10.1";
     private static final int MTU = 10000;
     private static final byte VPN_MAGIC = 0xe;
-
-    public static void main(String[] args) {
-        if(args.length < 2) {
-            System.err.println("WintunVpn host port");
-            return;
-        }
-        String host = args[0];
-        int port = Integer.parseInt(args[1]);
-        try {
-            WintunVpn vpn = new WintunVpn(host, port);
-            vpn.start();
-
-            Scanner scanner = new Scanner(System.in);
-            String line;
-            while((line = scanner.nextLine()) != null) {
-                if ("q".equalsIgnoreCase(line) ||
-                        "quit".equalsIgnoreCase(line) ||
-                        "exit".equalsIgnoreCase(line)) {
-                    vpn.stop();
-                    break;
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace(System.err);
-        }
-    }
-
-    @Override
-    public void run() {
-        String guid = Guid.GUID.newGuid().toGuidString();
-        try (WintunAdapter adapter = new WintunAdapter("Wintun", "Wintun", guid)) {
-            adapter.setMTU(IPHlpAPI.AF_INET, MTU);
-            InetAddress ip = Inet4Address.getByName(VPN_CLIENT_IP);
-            adapter.associateIp(ip, 24);
-            for(AdapterIPAddress ipAddress : adapter.listAssociatedAddresses(IPHlpAPI.AF_INET6)) {
-                adapter.dissociateIp(ipAddress.getIp());
-            }
-            startNative(adapter);
-        } catch(Exception e) {
-            e.printStackTrace(System.err);
-        }
-    }
 
     private class StreamForward implements Runnable {
         private final DataInput dataInput;
@@ -99,7 +58,20 @@ public class WintunVpn implements Runnable {
         if(canStop) {
             throw new IllegalStateException("Can't start VPN after stop");
         }
-        Thread thread = new Thread(this);
+        Thread thread = new Thread(() -> {
+            String guid = Guid.GUID.newGuid().toGuidString();
+            try (WintunAdapter adapter = new WintunAdapter("Wintun", "Wintun", guid)) {
+                adapter.setMTU(IPHlpAPI.AF_INET, MTU);
+                InetAddress ip = Inet4Address.getByName(VPN_CLIENT_IP);
+                adapter.associateIp(ip, 24);
+                for(AdapterIPAddress ipAddress : adapter.listAssociatedAddresses(IPHlpAPI.AF_INET6)) {
+                    adapter.dissociateIp(ipAddress.getIp());
+                }
+                startNative(adapter);
+            } catch(Exception e) {
+                e.printStackTrace(System.err);
+            }
+        });
         thread.setPriority(Thread.MIN_PRIORITY);
         thread.start();
     }
@@ -117,7 +89,20 @@ public class WintunVpn implements Runnable {
                  OutputStream outputStream = socket.getOutputStream()) {
                 DataOutput output = new DataOutputStream(outputStream);
                 int osType = 0x3;
+                if (configData != null) {
+                    osType |= 0x80;
+                }
                 output.writeByte(osType);
+                if (configData != null) {
+                    Locale locale = Locale.getDefault();
+                    JSONObject obj = new JSONObject(4, true);
+                    obj.put("locale", locale.toString());
+                    obj.put("language", locale.getLanguage());
+                    obj.put("country", locale.getCountry());
+                    obj.put("config", configData);
+                    String json = obj.toString();
+                    output.writeUTF(json);
+                }
                 Thread thread = new Thread(new StreamForward(new DataInputStream(inputStream), session));
                 thread.start();
                 while (!canStop) {
@@ -143,13 +128,19 @@ public class WintunVpn implements Runnable {
     }
 
     private final InetSocketAddress vpnServer;
+    private final byte[] configData;
 
     public WintunVpn(String host, int port) {
         this(new InetSocketAddress(host, port));
     }
 
     public WintunVpn(InetSocketAddress vpnServer) {
+        this(vpnServer, null);
+    }
+
+    public WintunVpn(InetSocketAddress vpnServer, byte[] configData) {
         this.vpnServer = vpnServer;
+        this.configData = configData;
     }
 
 }
