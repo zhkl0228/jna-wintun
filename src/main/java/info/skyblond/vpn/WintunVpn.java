@@ -1,6 +1,5 @@
 package info.skyblond.vpn;
 
-import com.alibaba.fastjson.JSONObject;
 import com.sun.jna.platform.win32.Guid;
 import com.sun.jna.platform.win32.IPHlpAPI;
 import info.skyblond.jna.wintun.AdapterIPAddress;
@@ -11,6 +10,7 @@ import info.skyblond.jna.wintun.WintunSession;
 import java.io.*;
 import java.net.*;
 import java.util.Locale;
+import java.util.Properties;
 
 /**
  * WintunVpn 192.168.1.28 20240
@@ -95,13 +95,16 @@ public class WintunVpn {
                 output.writeByte(osType);
                 if (configData != null) {
                     Locale locale = Locale.getDefault();
-                    JSONObject obj = new JSONObject(4, true);
-                    obj.put("locale", locale.toString());
-                    obj.put("language", locale.getLanguage());
-                    obj.put("country", locale.getCountry());
-                    obj.put("config", configData);
-                    String json = obj.toString();
-                    output.writeUTF(json);
+                    try(ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+                        Properties properties = new Properties();
+                        properties.put("locale", locale.toString());
+                        properties.put("language", locale.getLanguage());
+                        properties.put("country", locale.getCountry());
+                        properties.put("config", configData);
+                        properties.store(baos, "Vpn config properties");
+                        String config = baos.toString("UTF-8");
+                        output.writeUTF(config);
+                    }
                 }
                 Thread thread = new Thread(new StreamForward(new DataInputStream(inputStream), session));
                 thread.start();

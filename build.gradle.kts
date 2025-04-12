@@ -16,7 +16,6 @@ repositories {
 dependencies {
     implementation("net.java.dev.jna:jna:5.12.1")
     implementation("net.java.dev.jna:jna-platform:5.12.1")
-    implementation("com.alibaba:fastjson:1.2.83")
 
     testImplementation(kotlin("test"))
     testImplementation("org.pcap4j:pcap4j-core:1.8.2")
