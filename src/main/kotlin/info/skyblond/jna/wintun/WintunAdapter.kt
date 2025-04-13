@@ -58,7 +58,7 @@ class WintunAdapter(
                 "MIB_IPFORWARD_TABLE2 size not match. Expect ${table.numEntries}, actual: ${table.table.size}"
             }
             val result = table.table.map {
-                it.DestinationPrefix.Prefix.setType(Int::class.java)
+                it.DestinationPrefix.Prefix.setType(Short::class.java)
                 val destination = when (it.DestinationPrefix.Prefix.si_family.toInt()) {
                     IPHlpAPI.AF_INET -> {
                         val v4 = it.DestinationPrefix.Prefix.getTypedValue(SocketAddrIn::class.java) as SocketAddrIn
@@ -72,7 +72,7 @@ class WintunAdapter(
 
                     else -> error("Unknown si family: ${it.DestinationPrefix.Prefix.si_family}")
                 }
-                it.NextHop.setType(Int::class.java)
+                it.NextHop.setType(Short::class.java)
                 val nextHop = when (it.NextHop.si_family.toInt()) {
                     IPHlpAPI.AF_INET -> {
                         val v4 = it.NextHop.getTypedValue(SocketAddrIn::class.java) as SocketAddrIn
@@ -167,7 +167,7 @@ class WintunAdapter(
         val result = table.Table
             .filter { it.InterfaceLuid == luid }
             .map {
-                it.Address.setType(Int::class.java)
+                it.Address.setType(Short::class.java)
                 val ip = when (it.Address.si_family.toInt()) {
                     IPHlpAPI.AF_INET -> {
                         val v4 = it.Address.getTypedValue(SocketAddrIn::class.java) as SocketAddrIn
