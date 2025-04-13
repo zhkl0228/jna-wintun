@@ -59,7 +59,7 @@ class WintunAdapter(
             }
             val result = table.table.map {
                 it.DestinationPrefix.Prefix.setType(Int::class.java)
-                val destination = when (it.DestinationPrefix.Prefix.si_family) {
+                val destination = when (it.DestinationPrefix.Prefix.si_family.toInt()) {
                     IPHlpAPI.AF_INET -> {
                         val v4 = it.DestinationPrefix.Prefix.getTypedValue(SocketAddrIn::class.java) as SocketAddrIn
                         Inet4Address.getByAddress(v4.sin_addr.copyOf())
@@ -73,7 +73,7 @@ class WintunAdapter(
                     else -> error("Unknown si family: ${it.DestinationPrefix.Prefix.si_family}")
                 }
                 it.NextHop.setType(Int::class.java)
-                val nextHop = when (it.NextHop.si_family) {
+                val nextHop = when (it.NextHop.si_family.toInt()) {
                     IPHlpAPI.AF_INET -> {
                         val v4 = it.NextHop.getTypedValue(SocketAddrIn::class.java) as SocketAddrIn
                         Inet4Address.getByAddress(v4.sin_addr.copyOf())
@@ -142,7 +142,6 @@ class WintunAdapter(
         val err = ipHelperLib.CreateIpForwardEntry2(row)
         if (err != WinError.NO_ERROR)
             throw NativeException("Failed to set default router", err)
-        ipHelperLib.FreeMibTable(row.pointer)
     }
 
     /**
@@ -169,7 +168,7 @@ class WintunAdapter(
             .filter { it.InterfaceLuid == luid }
             .map {
                 it.Address.setType(Int::class.java)
-                val ip = when (it.Address.si_family) {
+                val ip = when (it.Address.si_family.toInt()) {
                     IPHlpAPI.AF_INET -> {
                         val v4 = it.Address.getTypedValue(SocketAddrIn::class.java) as SocketAddrIn
                         Inet4Address.getByAddress(v4.sin_addr.copyOf())
