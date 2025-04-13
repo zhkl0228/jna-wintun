@@ -84,6 +84,7 @@ public class WintunVpn {
         try (Socket socket = new Socket();
              WintunSession session = adapter.newSession(0x800000)) {
             socket.connect(vpnServer, 15000);
+            System.out.println("Connected to " + vpnServer);
             adapter.setDefaultAdapter();
             try (InputStream inputStream = socket.getInputStream();
                  OutputStream outputStream = socket.getOutputStream()) {

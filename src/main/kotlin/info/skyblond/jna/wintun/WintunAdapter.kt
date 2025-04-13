@@ -132,10 +132,11 @@ class WintunAdapter(
         val row = MIB_IPFORWARD_ROW2()
         ipHelperLib.InitializeIpForwardEntry(row)
         row.InterfaceLuid = getLuid()
-        row.DestinationPrefix.Prefix.setType(Int::class.java)
-        row.DestinationPrefix.Prefix.si_family = IPHlpAPI.AF_INET
-        row.NextHop.setType(Int::class.java)
-        row.NextHop.si_family = IPHlpAPI.AF_INET
+        row.DestinationPrefix.PrefixLength = 0
+        row.DestinationPrefix.Prefix.setType(SocketAddrIn::class.java)
+        row.DestinationPrefix.Prefix.Ipv4.sin_family = IPHlpAPI.AF_INET.toShort()
+        row.DestinationPrefix.Prefix.Ipv4.sin_port = 0
+        row.DestinationPrefix.Prefix.Ipv4.sin_addr = Inet4Address.getByName("0.0.0.0").address
         row.SitePrefixLength = 0
         row.Metric = 0
         val err = ipHelperLib.CreateIpForwardEntry2(row)
