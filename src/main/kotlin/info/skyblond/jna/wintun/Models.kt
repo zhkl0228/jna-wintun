@@ -24,6 +24,7 @@ class NativeException(msg: String, err: Int) : Exception(
 )
 
 data class ForwardTable(
+    val interfaceLuid: Long,
     val interfaceIndex: Int,
     val destination: InetAddress,
     val prefixLength: UByte,

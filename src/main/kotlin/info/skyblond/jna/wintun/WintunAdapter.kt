@@ -20,7 +20,7 @@ import java.net.InetAddress
  *
  * NOT thread-safe.
  * */
-class WintunAdapter(
+open class WintunAdapter(
     /**
      * The name of the tun adapter
      * */
@@ -87,6 +87,7 @@ class WintunAdapter(
                     else -> error("Unknown si family: ${it.NextHop.si_family}")
                 }
                 ForwardTable(
+                    interfaceLuid = it.InterfaceLuid,
                     interfaceIndex = it.InterfaceIndex,
                     destination = destination,
                     prefixLength = it.DestinationPrefix.PrefixLength.toUByte(),
@@ -122,26 +123,10 @@ class WintunAdapter(
     /**
      * Get the LUID of this adapter.
      * */
-    private fun getLuid(): Long {
+    protected fun getLuid(): Long {
         val result = LongByReference()
         wintunLib.WintunGetAdapterLUID(adapter, result)
         return result.value
-    }
-
-    fun setDefaultAdapter() {
-        val row = MIB_IPFORWARD_ROW2()
-        ipHelperLib.InitializeIpForwardEntry(row)
-        row.InterfaceLuid = getLuid()
-        row.DestinationPrefix.PrefixLength = 0
-        row.DestinationPrefix.Prefix.setType(SocketAddrIn::class.java)
-        row.DestinationPrefix.Prefix.Ipv4.sin_family = IPHlpAPI.AF_INET.toShort()
-        row.DestinationPrefix.Prefix.Ipv4.sin_port = 0
-        row.DestinationPrefix.Prefix.Ipv4.sin_addr = Inet4Address.getByName("0.0.0.0").address
-        row.SitePrefixLength = 0
-        row.Metric = 0
-        val err = ipHelperLib.CreateIpForwardEntry2(row)
-        if (err != WinError.NO_ERROR)
-            throw NativeException("Failed to set default router", err)
     }
 
     /**
