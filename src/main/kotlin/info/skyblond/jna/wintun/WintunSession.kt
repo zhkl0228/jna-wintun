@@ -57,7 +57,7 @@ class WintunSession(
                 else -> throw NativeException("Error when reading session", err)
             }
             // now it's waiting time
-            return if (awaitTimeMs <= 0) {
+            return if (awaitTimeMs > 0 || awaitTimeMs == WinBase.INFINITE) {
                 kernel32.WaitForSingleObject(readEvent, awaitTimeMs)
                 // do it again
                 readPacket(0)
