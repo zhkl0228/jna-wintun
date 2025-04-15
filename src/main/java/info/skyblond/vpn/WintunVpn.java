@@ -65,6 +65,7 @@ public class WintunVpn {
                     adapter.dissociateIp(ipAddress.getIp());
                 }
                 startNative(adapter);
+                System.out.println("VPN exited");
             } catch(Exception e) {
                 e.printStackTrace(System.err);
             }
@@ -75,14 +76,25 @@ public class WintunVpn {
 
     public void stop() {
         canStop = true;
+        if (vpnSocket != null) {
+            try {
+                vpnSocket.close();
+                vpnSocket = null;
+            } catch (IOException ignored) {
+            }
+        }
     }
+
+    private Socket vpnSocket;
 
     private void startNative(VpnWintunAdapter adapter) throws IOException, NativeException {
         try (Socket socket = new Socket();
              WintunSession session = adapter.newSession(0x800000)) {
+            long start = System.currentTimeMillis();
             socket.connect(vpnServer, 15000);
-            System.out.println("Connected to " + vpnServer);
+            vpnSocket = socket;
             configAdapter(adapter);
+            System.out.printf("Connected to %s in %dms%n", vpnServer, System.currentTimeMillis() - start);
             try (InputStream inputStream = socket.getInputStream();
                  OutputStream outputStream = socket.getOutputStream()) {
                 DataOutput output = new DataOutputStream(outputStream);
@@ -107,7 +119,7 @@ public class WintunVpn {
                 Thread thread = new Thread(new StreamForward(new DataInputStream(inputStream), session));
                 thread.start();
                 while (!canStop) {
-                    byte[] packet = session.readPacket();
+                    byte[] packet = session.readPacket(100);
                     if(packet == null) {
                         Thread.yield();
                         continue;
@@ -122,7 +134,7 @@ public class WintunVpn {
                     output.write(packet, 0, packet.length);
                     outputStream.flush();
                 }
-            }
+            } catch(SocketException ignored) {}
         } finally {
             canStop = true;
         }

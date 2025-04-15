@@ -30,6 +30,7 @@ public class VpnWintunAdapter extends WintunAdapter {
 
     public void addRoute(@NotNull InetAddress address, int prefixLength) throws NativeException {
         MIB_IPFORWARD_ROW2 row = new MIB_IPFORWARD_ROW2();
+        ExtendedIPHlpAPI.getINSTANCE().InitializeIpForwardEntry(row);
         row.InterfaceLuid = getLuid();
         row.DestinationPrefix.PrefixLength = (byte) prefixLength;
         if (address instanceof Inet4Address) {

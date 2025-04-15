@@ -21,7 +21,7 @@ class WintunSession(
 
     @Throws(NativeException::class, EOFException::class)
     fun readPacket(): ByteArray? {
-        return readPacket(awaitTimeMs = WinBase.INFINITE.toUInt())
+        return readPacket(awaitTimeMs = WinBase.INFINITE)
     }
 
     /**
@@ -36,7 +36,7 @@ class WintunSession(
      * @see [Kernel32.WaitForSingleObject]
      * */
     @Throws(NativeException::class, EOFException::class)
-    fun readPacket(awaitTimeMs: UInt = WinBase.INFINITE.toUInt()): ByteArray? {
+    fun readPacket(awaitTimeMs: Int = WinBase.INFINITE): ByteArray? {
         val packetSizePointer = IntByReference()
         // read once
         val pointer = lib.WintunReceivePacket(session, packetSizePointer)
@@ -57,10 +57,10 @@ class WintunSession(
                 else -> throw NativeException("Error when reading session", err)
             }
             // now it's waiting time
-            return if (awaitTimeMs != 0u) {
-                kernel32.WaitForSingleObject(readEvent, awaitTimeMs.toInt())
+            return if (awaitTimeMs <= 0) {
+                kernel32.WaitForSingleObject(readEvent, awaitTimeMs)
                 // do it again
-                readPacket(0u)
+                readPacket(0)
             } else {// no wait
                 null
             }
